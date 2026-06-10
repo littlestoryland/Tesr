@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SMC // DERIV DASHBOARD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ng:#00ff9d;--nb:#00cfff;--np:#bf5fff;--npk:#ff2d78;--ny:#ffe000;
+  --bg:#060914;--bg2:#0d1526;--bg3:#111e35;--bdr:#1a2f50;
+  --tx:#c8e0ff;--tx2:#6a90c0;
+}
+html,body{background:var(--bg);color:var(--tx);font-family:'Share Tech Mono',monospace;font-size:13px;min-height:100vh}
+
+/* ── SCANLINES overlay ── */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:999}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;animation:fadein .4s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.login-logo{font-family:'Orbitron',monospace;font-size:26px;font-weight:700;color:var(--nb);letter-spacing:4px;margin-bottom:6px;text-align:center}
+.login-sub{font-size:11px;color:var(--tx2);letter-spacing:.15em;margin-bottom:32px;text-align:center}
+.login-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:24px;width:100%;max-width:380px}
+.login-card h2{font-family:'Orbitron',monospace;font-size:13px;color:var(--nb);letter-spacing:2px;margin-bottom:20px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;color:var(--tx2);letter-spacing:.08em;margin-bottom:6px}
+.field input{width:100%;background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:10px 12px;color:var(--tx);font-family:'Share Tech Mono',monospace;font-size:13px;outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--nb)}
+.btn-login{width:100%;padding:11px;background:#001a2e;border:1px solid var(--nb);border-radius:6px;color:var(--nb);font-family:'Orbitron',monospace;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s}
+.btn-login:hover{background:#00263d}
+.btn-login:active{transform:scale(.98)}
+.btn-oauth{width:100%;margin-top:10px;padding:11px;background:#12002e;border:1px solid var(--np);border-radius:6px;color:var(--np);font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s}
+.btn-oauth:hover{background:#1c003e}
+.login-info{margin-top:14px;background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:10px 12px;font-size:11px;color:var(--tx2);line-height:1.7}
+.login-info a{color:var(--nb);text-decoration:none}
+.login-err{color:var(--npk);font-size:11px;margin-top:10px;text-align:center;min-height:16px}
+.divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--tx2);font-size:11px}
+.divider::before,.divider::after{content:'';flex:1;height:0.5px;background:var(--bdr)}
+
+/* ── MAIN APP ── */
+#app{display:none;padding:12px;max-width:480px;margin:0 auto}
+
+/* header */
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--bdr)}
+.hdr-left{display:flex;align-items:center;gap:8px}
+.logo{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--nb);letter-spacing:2px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--ng);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.acc-badge{font-size:10px;color:var(--ng);background:#00200f;padding:3px 8px;border-radius:4px;border:1px solid var(--ng)}
+.btn-logout{font-family:'Share Tech Mono',monospace;font-size:10px;padding:3px 8px;border-radius:4px;background:transparent;border:1px solid var(--bdr);color:var(--tx2);cursor:pointer}
+.btn-logout:hover{border-color:var(--npk);color:var(--npk)}
+.clock{font-size:10px;color:var(--tx2)}
+
+/* balance bar */
+.balance-bar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.bal-item{background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;text-align:center}
+.bal-label{font-size:10px;color:var(--tx2);letter-spacing:.06em;margin-bottom:3px}
+.bal-val{font-size:13px;font-family:'Orbitron',monospace;color:var(--ng)}
+
+/* symbol pills */
+.sym-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.pill{font-family:'Share Tech Mono',monospace;font-size:11px;padding:5px 10px;border-radius:4px;border:1px solid var(--bdr);background:var(--bg2);color:var(--tx2);cursor:pointer;transition:all .15s}
+.pill.act{border-color:var(--nb);color:var(--nb);background:#001a2e}
+.pill:active{transform:scale(.96)}
+
+/* timeframe */
+.tf-row{display:flex;gap:6px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.tf-label{font-size:11px;color:var(--tx2);margin-right:2px}
+.tf-btn{font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--bdr);background:var(--bg2);color:var(--tx2);cursor:pointer;transition:all .15s}
+.tf-btn.act{border-color:var(--np);color:var(--np);background:#12002e}
+.tf-btn:active{transform:scale(.96)}
+
+/* auto refresh toggle */
+.auto-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px}
+.auto-label{font-size:11px;color:var(--tx2);flex:1}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--bg3);border-radius:11px;border:1px solid var(--bdr);cursor:pointer;transition:.2s}
+.slider::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:var(--tx2);border-radius:50%;transition:.2s}
+.toggle input:checked + .slider{background:#001a2e;border-color:var(--ng)}
+.toggle input:checked + .slider::before{background:var(--ng);transform:translateX(18px)}
+.auto-int-select{font-family:'Share Tech Mono',monospace;font-size:11px;background:var(--bg3);border:1px solid var(--bdr);color:var(--tx2);border-radius:4px;padding:3px 6px;cursor:pointer}
+
+/* scan button */
+.scan-btn{display:flex;align-items:center;gap:6px;font-family:'Share Tech Mono',monospace;font-size:12px;padding:10px 16px;border-radius:6px;border:1px solid var(--nb);background:#001a2e;color:var(--nb);cursor:pointer;width:100%;justify-content:center;margin-bottom:14px;letter-spacing:1px;transition:all .15s}
+.scan-btn:hover{background:#002a48}
+.scan-btn.scanning{border-color:var(--np);color:var(--np);background:#12002e}
+.spin{display:inline-block;width:12px;height:12px;border:1.5px solid var(--np);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* live price ticker */
+.ticker{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;margin-bottom:14px}
+.ticker-sym{font-family:'Orbitron',monospace;font-size:11px;color:var(--tx2)}
+.ticker-price{font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--nb);transition:color .3s}
+.ticker-price.up{color:var(--ng)}
+.ticker-price.dn{color:var(--npk)}
+.ticker-change{font-size:11px}
+.ticker-change.up{color:var(--ng)}
+.ticker-change.dn{color:var(--npk)}
+
+/* bias */
+.bias-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.bias-chip{font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid var(--bdr);background:var(--bg2);color:var(--tx2)}
+.bias-chip.bull{border-color:var(--ng);color:var(--ng);background:#00200f}
+.bias-chip.bear{border-color:var(--npk);color:var(--npk);background:#200010}
+.bias-chip.neu{border-color:var(--ny);color:var(--ny);background:#1a1400}
+
+/* metrics */
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.mc{background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px}
+.mc-label{font-size:10px;color:var(--tx2);letter-spacing:.08em;margin-bottom:4px}
+.mc-val{font-size:20px;font-family:'Orbitron',monospace;font-weight:700}
+.mc-val.green{color:var(--ng)}
+.mc-val.pink{color:var(--npk)}
+.mc-val.yellow{color:var(--ny)}
+.mc-val.blue{color:var(--nb)}
+.mc-val.white{color:var(--tx)}
+
+/* confidence bar */
+.conf-wrap{margin-bottom:14px}
+.conf-top{display:flex;justify-content:space-between;font-size:10px;color:var(--tx2);margin-bottom:5px;letter-spacing:.08em}
+.conf-bg{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;border:.5px solid var(--bdr)}
+.conf-fill{height:100%;border-radius:3px;transition:width .6s ease}
+
+/* signal box */
+.sig-box{border-radius:10px;border:1px solid var(--bdr);background:var(--bg2);padding:14px;margin-bottom:12px;position:relative;overflow:hidden}
+.sig-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sig-box.buy::before{background:var(--ng)}
+.sig-box.sell::before{background:var(--npk)}
+.sig-box.wait::before{background:var(--ny)}
+.sig-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sig-name{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--nb)}
+.dir-badge{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;padding:4px 12px;border-radius:4px;letter-spacing:2px}
+.dir-badge.buy{background:#00200f;border:1px solid var(--ng);color:var(--ng)}
+.dir-badge.sell{background:#200010;border:1px solid var(--npk);color:var(--npk)}
+.dir-badge.wait{background:#1a1400;border:1px solid var(--ny);color:var(--ny)}
+.price-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.pg-item{background:var(--bg3);border-radius:6px;padding:7px 10px;border:.5px solid var(--bdr)}
+.pg-label{font-size:10px;color:var(--tx2);margin-bottom:3px}
+.pg-val{font-size:13px;font-family:'Share Tech Mono',monospace}
+.pg-val.green{color:var(--ng)}
+.pg-val.pink{color:var(--npk)}
+.pg-val.blue{color:var(--nb)}
+
+/* tags */
+.smc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.tag{font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid var(--bdr);background:var(--bg3);color:var(--tx2)}
+.tag.on-buy{border-color:var(--ng);color:var(--ng);background:#00200f}
+.tag.on-sell{border-color:var(--npk);color:var(--npk);background:#200010}
+.tag.on-ob{border-color:var(--nb);color:var(--nb);background:#001a2e}
+.tag.on-warn{border-color:var(--ny);color:var(--ny);background:#1a1400}
+
+.wait-msg{text-align:center;padding:1.2rem 0;color:var(--ny);font-size:13px}
+.wait-msg span{display:block;color:var(--tx2);font-size:11px;margin-top:6px}
+
+/* checklist */
+.checklist{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:12px;margin-bottom:12px}
+.cl-title{font-size:11px;color:var(--tx2);letter-spacing:.1em;margin-bottom:10px}
+.cl-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--bdr);font-size:12px;color:var(--tx)}
+.cl-row:last-child{border-bottom:none}
+.cl-icon{font-size:14px;width:16px;text-align:center}
+.cl-icon.pass{color:var(--ng)}
+.cl-icon.fail{color:var(--npk)}
+.cl-val{margin-left:auto;font-size:10px;color:var(--tx2);background:var(--bg3);padding:2px 7px;border-radius:3px;border:.5px solid var(--bdr)}
+
+/* candle mini chart */
+.chart-wrap{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:12px;margin-bottom:12px}
+.chart-title{font-size:10px;color:var(--tx2);letter-spacing:.08em;margin-bottom:8px}
+#mini-chart{width:100%;height:90px;display:block}
+
+/* history */
+.history{background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;padding:12px;margin-bottom:12px}
+.history-title{font-size:11px;color:var(--tx2);letter-spacing:.1em;margin-bottom:10px}
+.hist-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--bdr);font-size:11px}
+.hist-row:last-child{border-bottom:none}
+.hist-dir{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px}
+.hist-dir.buy{background:#00200f;color:var(--ng);border:1px solid var(--ng)}
+.hist-dir.sell{background:#200010;color:var(--npk);border:1px solid var(--npk)}
+.hist-meta{color:var(--tx2);font-size:10px;flex:1;text-align:right}
+
+/* notification toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--nb);border-radius:8px;padding:10px 18px;font-size:12px;color:var(--nb);z-index:1000;animation:toastin .3s ease,toastout .3s ease 2.7s forwards;white-space:nowrap}
+@keyframes toastin{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes toastout{from{opacity:1}to{opacity:0}}
+
+.footer{text-align:center;font-size:10px;color:var(--tx2);padding:8px 0;border-top:.5px solid var(--bdr);margin-top:4px}
+.ws-status{display:inline-flex;align-items:center;gap:5px}
+.ws-dot{width:6px;height:6px;border-radius:50%}
+.ws-dot.conn{background:var(--ng)}
+.ws-dot.disc{background:var(--npk)}
+.ws-dot.connecting{background:var(--ny);animation:pulse 1s infinite}
+
+/* spinner overlay */
+#loader{display:none;position:fixed;inset:0;background:rgba(6,9,20,.85);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+#loader.show{display:flex}
+.loader-spin{width:40px;height:40px;border:3px solid var(--bdr);border-top-color:var(--nb);border-radius:50%;animation:spin .8s linear infinite}
+.loader-text{font-family:'Orbitron',monospace;font-size:12px;color:var(--nb);letter-spacing:2px}
+
+/* ── STEP GUIDE ── */
+.step-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.step-num{min-width:22px;height:22px;border-radius:50%;background:#001a2e;border:1px solid var(--nb);color:var(--nb);font-family:'Orbitron',monospace;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-txt{font-size:11px;color:var(--tx2);line-height:1.65}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-spin"></div>
+  <div class="loader-text" id="loader-text">CONNECTING...</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-logo">SMC//DERIV</div>
+  <div class="login-sub">SMART MONEY CONCEPTS ● VOLATILITY INDICES</div>
+
+  <div class="login-card">
+    <h2><i class="ti ti-terminal-2"></i> CONNECT ACCOUNT</h2>
+
+    <button class="btn-oauth" onclick="loginOAuth()">
+      <i class="ti ti-login"></i> LOGIN WITH DERIV OAUTH
+    </button>
+
+    <div class="divider">or paste trading API token</div>
+
+    <div class="field">
+      <label>API TOKEN (from app.deriv.com)</label>
+      <div style="position:relative">
+        <input type="password" id="token-input" placeholder="a1-xxxxxxxxxxxxxxxx" autocomplete="off" style="padding-right:40px"/>
+        <span onclick="toggleShow()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--tx2);font-size:16px" id="eye-icon"><i class="ti ti-eye"></i></span>
+      </div>
+    </div>
+    <button class="btn-login" onclick="loginToken()">
+      <i class="ti ti-plug-connected"></i> CONNECT
+    </button>
+
+    <div style="margin-top:14px">
+      <div style="font-size:11px;color:var(--nb);letter-spacing:.08em;margin-bottom:8px"><i class="ti ti-map-pin" style="font-size:12px"></i> WHERE TO GET YOUR TOKEN</div>
+
+      <div style="background:#200010;border:1px solid var(--npk);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--npk);margin-bottom:10px;line-height:1.6">
+        <i class="ti ti-alert-triangle"></i> <strong>NOT api.deriv.com</strong> — that's the developer portal, wrong token.<br/>
+        You need <strong>app.deriv.com</strong> (your actual trading app).
+      </div>
+
+      <div class="step-row">
+        <div class="step-num">1</div>
+        <div class="step-txt">Go to <a href="https://app.deriv.com" target="_blank" style="color:var(--nb)">app.deriv.com</a> — make sure you're on your <span style="color:var(--ng)">Demo account</span></div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">2</div>
+        <div class="step-txt">Click your <span style="color:var(--ny)">name/avatar</span> in the top-right corner</div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">3</div>
+        <div class="step-txt">Go to <span style="color:var(--ny)">Security &amp; safety</span> → <span style="color:var(--ny)">API token</span></div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">4</div>
+        <div class="step-txt">Click <span style="color:var(--ng)">Create new token</span>, name it anything, tick <span style="color:var(--ng)">Read</span> only</div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">5</div>
+        <div class="step-txt">Copy the token — it starts with <span style="color:var(--ng); font-family:'Share Tech Mono',monospace">a1-</span></div>
+      </div>
+
+      <div style="margin-top:10px;background:var(--bg3);border:1px solid var(--bdr);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--tx2);line-height:1.6">
+        <i class="ti ti-info-circle" style="color:var(--nb)"></i>
+        <strong style="color:var(--nb)"> OAuth</strong> only works when hosted online (not a local file). Token login works everywhere.
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:12px">
+      <span style="font-size:10px;color:var(--tx2);cursor:pointer;text-decoration:underline" onclick="clearSession()">clear saved session</span>
+    </div>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="live-dot"></div>
+      <div class="logo">SMC//DERIV</div>
+    </div>
+    <div class="hdr-right">
+      <span class="acc-badge" id="acc-badge">DEMO</span>
+      <span class="clock" id="clock">--:--</span>
+      <button class="btn-logout" onclick="logout()"><i class="ti ti-power"></i></button>
+    </div>
+  </div>
+
+  <!-- Balance bar -->
+  <div class="balance-bar">
+    <div class="bal-item">
+      <div class="bal-label">BALANCE</div>
+      <div class="bal-val" id="bal-balance">—</div>
+    </div>
+    <div class="bal-item">
+      <div class="bal-label">CURRENCY</div>
+      <div class="bal-val" id="bal-currency" style="color:var(--nb)">—</div>
+    </div>
+    <div class="bal-item">
+      <div class="bal-label">ACCOUNT</div>
+      <div class="bal-val" id="bal-type" style="color:var(--np)">—</div>
+    </div>
+  </div>
+
+  <!-- Symbol selector -->
+  <div class="sym-pills" id="sym-pills">
+    <div class="pill act" onclick="setSym('R_10',this)">V10</div>
+    <div class="pill" onclick="setSym('1HZ10V',this)">V10 1s</div>
+    <div class="pill" onclick="setSym('R_25',this)">V25</div>
+    <div class="pill" onclick="setSym('1HZ25V',this)">V25 1s</div>
+    <div class="pill" onclick="setSym('R_50',this)">V50</div>
+    <div class="pill" onclick="setSym('R_75',this)">V75</div>
+    <div class="pill" onclick="setSym('R_100',this)">V100</div>
+  </div>
+
+  <!-- Timeframe -->
+  <div class="tf-row">
+    <span class="tf-label">TF:</span>
+    <button class="tf-btn act" onclick="setTF(60,this)">M1</button>
+    <button class="tf-btn" onclick="setTF(300,this)">M5</button>
+    <button class="tf-btn" onclick="setTF(900,this)">M15</button>
+    <button class="tf-btn" onclick="setTF(3600,this)">H1</button>
+  </div>
+
+  <!-- Auto-refresh -->
+  <div class="auto-row">
+    <span class="ti ti-refresh" style="color:var(--np);font-size:15px"></span>
+    <span class="auto-label">AUTO SCAN</span>
+    <select class="auto-int-select" id="auto-int" onchange="updateAutoInterval()">
+      <option value="10">10s</option>
+      <option value="30" selected>30s</option>
+      <option value="60">1m</option>
+      <option value="120">2m</option>
+    </select>
+    <label class="toggle">
+      <input type="checkbox" id="auto-toggle" onchange="toggleAuto()"/>
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <!-- Scan button -->
+  <button class="scan-btn" id="scan-btn" onclick="doScan()">
+    <i class="ti ti-radar"></i> SCAN MARKET
+  </button>
+
+  <!-- Live ticker -->
+  <div class="ticker">
+    <span class="ticker-sym" id="ticker-sym">—</span>
+    <div style="text-align:right">
+      <div class="ticker-price" id="ticker-price">—</div>
+      <div class="ticker-change" id="ticker-change">—</div>
+    </div>
+  </div>
+
+  <!-- HTF Bias -->
+  <div class="bias-row" id="bias-row"></div>
+
+  <!-- Metrics -->
+  <div class="metrics" id="metrics"></div>
+
+  <!-- Confidence bar -->
+  <div class="conf-wrap" id="conf-wrap"></div>
+
+  <!-- Mini candle chart -->
+  <div class="chart-wrap">
+    <div class="chart-title"><i class="ti ti-chart-candle" style="font-size:12px"></i>  RECENT CANDLES</div>
+    <canvas id="mini-chart"></canvas>
+  </div>
+
+  <!-- Signal -->
+  <div id="signal-area"></div>
+
+  <!-- Checklist -->
+  <div class="checklist" id="checklist"></div>
+
+  <!-- Signal History -->
+  <div class="history" id="hist-section" style="display:none">
+    <div class="history-title"><i class="ti ti-history" style="font-size:12px"></i>  SIGNAL HISTORY</div>
+    <div id="hist-list"></div>
+  </div>
+
+  <!-- Footer / WS status -->
+  <div class="footer">
+    <span class="ws-status">
+      <span class="ws-dot connecting" id="ws-dot"></span>
+      <span id="ws-label">connecting...</span>
+    </span>
+    &nbsp;|&nbsp;<span id="last-scan">not scanned</span>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════
+// app_id=36544 is Deriv's official "API explorer" public app — works for OAuth redirects
+// If you register your own app at app.deriv.com/account/api-token you can replace this
+const APP_ID  = 36544;
+const WS_URL  = `wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`;
+
+const SYM_NAMES = {
+  R_10:'Vol 10',  '1HZ10V':'Vol 10 1s', R_25:'Vol 25',
+  '1HZ25V':'Vol 25 1s', R_50:'Vol 50', R_75:'Vol 75', R_100:'Vol 100'
+};
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let ws = null;
+let token = null;
+let currentSym = 'R_10';
+let currentTF  = 60;
+let autoTimer  = null;
+let autoInterval = 30;
+let candles    = [];
+let lastPrice  = null;
+let prevPrice  = null;
+let signalHistory = [];
+let reqId = 1;
+let pendingResolvers = {};
+let tickSub = null;
+
+// ══════════════════════════════════════════════
+//  WEBSOCKET LAYER
+// ══════════════════════════════════════════════
+function wsConnect(){
+  return new Promise((resolve, reject)=>{
+    showLoader('CONNECTING...');
+    ws = new WebSocket(WS_URL);
+    ws.onopen = ()=>{
+      setWS('conn','connected');
+      hideLoader();
+      resolve();
+    };
+    ws.onerror = ()=>{ hideLoader(); reject(new Error('WebSocket error')); };
+    ws.onclose = ()=>{ setWS('disc','disconnected'); };
+    ws.onmessage = (e)=>{
+      const d = JSON.parse(e.data);
+      if(d.req_id && pendingResolvers[d.req_id]){
+        pendingResolvers[d.req_id](d);
+        delete pendingResolvers[d.req_id];
+      }
+      // live tick subscription
+      if(d.msg_type === 'tick'){
+        const p = d.tick.quote;
+        prevPrice = lastPrice;
+        lastPrice = p;
+        updateTicker(p);
+      }
+    };
+  });
+}
+
+function wsSend(payload){
+  return new Promise((resolve)=>{
+    const id = reqId++;
+    payload.req_id = id;
+    pendingResolvers[id] = resolve;
+    ws.send(JSON.stringify(payload));
+  });
+}
+
+// ══════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════
+
+// OAuth login — opens Deriv login page, redirects back here with token1= in URL
+function loginOAuth(){
+  // Store the exact page URL so we return here after OAuth
+  const here = window.location.href.split('?')[0].split('#')[0];
+  sessionStorage.setItem('oauth_return', here);
+  const redirect = encodeURIComponent(here);
+  window.location.href =
+    `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&l=EN&brand=deriv&redirect_uri=${redirect}`;
+}
+
+// Token login
+async function loginToken(){
+  const t = document.getElementById('token-input').value.trim();
+  if(!t){ showErr('Please enter your API token'); return; }
+  await doLogin(t);
+}
+
+async function doLogin(t){
+  showLoader('AUTHENTICATING...');
+  try{
+    await wsConnect();
+    const res = await wsSend({ authorize: t });
+    if(res.error){ hideLoader(); showErr(res.error.message); return; }
+    token = t;
+    const info = res.authorize;
+    hideLoader();
+    showApp(info);
+    localStorage.setItem('deriv_token', t);
+  } catch(e){
+    hideLoader();
+    showErr('Connection failed. Check your token.');
+  }
+}
+
+function showApp(info){
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('acc-badge').textContent = info.is_virtual ? 'DEMO' : 'REAL';
+  document.getElementById('bal-balance').textContent = parseFloat(info.balance).toFixed(2);
+  document.getElementById('bal-currency').textContent = info.currency;
+  document.getElementById('bal-type').textContent = info.is_virtual ? 'VIRTUAL' : 'REAL';
+  subscribeTick(currentSym);
+  doScan();
+}
+
+function logout(){
+  token = null;
+  localStorage.removeItem('deriv_token');
+  sessionStorage.removeItem('oauth_return');
+  if(ws) ws.close();
+  ws = null;
+  stopAuto();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('token-input').value = '';
+  lastPrice = null; prevPrice = null; candles = [];
+  // Clear OAuth params from URL so refresh doesn't re-login
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
+// ══════════════════════════════════════════════
+//  LIVE TICK SUBSCRIPTION
+// ══════════════════════════════════════════════
+async function subscribeTick(sym){
+  if(tickSub){ await wsSend({ forget: tickSub }).catch(()=>{}); tickSub = null; }
+  const res = await wsSend({ ticks: sym, subscribe: 1 });
+  if(res.subscription) tickSub = res.subscription.id;
+  document.getElementById('ticker-sym').textContent = SYM_NAMES[sym] || sym;
+}
+
+function updateTicker(price){
+  const el  = document.getElementById('ticker-price');
+  const chg = document.getElementById('ticker-change');
+  el.textContent = price.toFixed(2);
+  el.className = 'ticker-price';
+  if(prevPrice !== null){
+    const diff = price - prevPrice;
+    const pct  = ((diff/prevPrice)*100).toFixed(3);
+    if(diff > 0){ el.classList.add('up'); chg.textContent = '▲ +'+Math.abs(diff).toFixed(2)+' ('+pct+'%)'; chg.className='ticker-change up'; }
+    else if(diff < 0){ el.classList.add('dn'); chg.textContent = '▼ -'+Math.abs(diff).toFixed(2)+' ('+Math.abs(pct)+'%)'; chg.className='ticker-change dn'; }
+    else { chg.textContent = '— 0.00 (0.000%)'; chg.className='ticker-change'; }
+  }
+}
+
+// ══════════════════════════════════════════════
+//  FETCH CANDLES  (OHLC from Deriv)
+// ══════════════════════════════════════════════
+async function fetchCandles(sym, granularity, count){
+  const res = await wsSend({ ticks_history: sym, adjust_start_time: 1, count, end:'latest', start:1, granularity, style:'candles' });
+  if(res.error || !res.candles) return [];
+  return res.candles;
+}
+
+// ══════════════════════════════════════════════
+//  SMC ENGINE  (real price, calculated structure)
+// ══════════════════════════════════════════════
+function calcATR(candles, period=14){
+  if(candles.length < period+1) return 0;
+  let atrSum = 0;
+  for(let i=candles.length-period; i<candles.length; i++){
+    const c=candles[i], p=candles[i-1];
+    const tr=Math.max(c.high-c.low, Math.abs(c.high-p.close), Math.abs(c.low-p.close));
+    atrSum+=tr;
+  }
+  return atrSum/period;
+}
+
+function detectOrderBlock(candles){
+  // Last bearish candle before bullish push (bullish OB) or last bullish before bearish (bearish OB)
+  if(candles.length < 5) return null;
+  const recent = candles.slice(-6);
+  for(let i=recent.length-2; i>=1; i--){
+    const prev=recent[i-1], cur=recent[i];
+    // Bullish OB: bearish candle followed by strong bullish move
+    if(prev.close < prev.open && cur.close > cur.open){
+      const strength = (cur.close-cur.open)/(prev.open-prev.close);
+      if(strength > 1.2) return { type:'bullish', high:prev.open, low:prev.close, strength:strength.toFixed(1) };
+    }
+    // Bearish OB: bullish candle followed by strong bearish move
+    if(prev.close > prev.open && cur.close < cur.open){
+      const strength = (cur.open-cur.close)/(prev.close-prev.open);
+      if(strength > 1.2) return { type:'bearish', high:prev.close, low:prev.open, strength:strength.toFixed(1) };
+    }
+  }
+  return null;
+}
+
+function detectFVG(candles){
+  // Fair Value Gap: gap between candle[i-2].high and candle[i].low (bullish) or candle[i-2].low and candle[i].high (bearish)
+  if(candles.length < 4) return null;
+  const n = candles.length;
+  const c0=candles[n-3], c2=candles[n-1];
+  if(c2.low > c0.high) return { type:'bullish', gap: c2.low-c0.high };
+  if(c2.high < c0.low) return { type:'bearish', gap: c0.low-c2.high };
+  return null;
+}
+
+function detectBOS(candles){
+  if(candles.length < 10) return null;
+  const n = candles.length;
+  const highs = candles.slice(-10).map(c=>c.high);
+  const lows  = candles.slice(-10).map(c=>c.low);
+  const prevHH = Math.max(...highs.slice(0,8));
+  const prevLL = Math.min(...lows.slice(0,8));
+  const lastH  = Math.max(...highs.slice(8));
+  const lastL  = Math.min(...lows.slice(8));
+  if(lastH > prevHH) return 'bullish';
+  if(lastL < prevLL) return 'bearish';
+  return null;
+}
+
+function detectCHoCH(candles){
+  if(candles.length < 15) return null;
+  const mid  = candles.slice(-15,-7);
+  const late = candles.slice(-7);
+  const midTrend = mid[mid.length-1].close > mid[0].close ? 'bull' : 'bear';
+  const lateTrend= late[late.length-1].close > late[0].close ? 'bull' : 'bear';
+  return midTrend !== lateTrend;
+}
+
+function detectLiquiditySweep(candles){
+  if(candles.length < 8) return null;
+  const prev8 = candles.slice(-9,-1);
+  const last  = candles[candles.length-1];
+  const prevHigh = Math.max(...prev8.map(c=>c.high));
+  const prevLow  = Math.min(...prev8.map(c=>c.low));
+  // Wick above recent high or below recent low then closes back
+  if(last.high > prevHigh && last.close < prevHigh) return 'buyside';
+  if(last.low  < prevLow  && last.close > prevLow ) return 'sellside';
+  return null;
+}
+
+function detectHTFBias(candles){
+  if(candles.length < 20) return 'neu';
+  const slice = candles.slice(-20);
+  const start = (slice[0].open+slice[0].close)/2;
+  const end   = (slice[slice.length-1].open+slice[slice.length-1].close)/2;
+  const pct   = (end-start)/start*100;
+  if(pct >  0.05) return 'bull';
+  if(pct < -0.05) return 'bear';
+  return 'neu';
+}
+
+function runSMC(candles, price){
+  const atr   = calcATR(candles);
+  const ob    = detectOrderBlock(candles);
+  const fvg   = detectFVG(candles);
+  const bos   = detectBOS(candles);
+  const choch = detectCHoCH(candles);
+  const liq   = detectLiquiditySweep(candles);
+  const htf   = detectHTFBias(candles);
+  const midpoint = (Math.max(...candles.slice(-20).map(c=>c.high)) + Math.min(...candles.slice(-20).map(c=>c.low))) / 2;
+  const inDiscount = price < midpoint;
+  const inPremium  = price > midpoint;
+
+  let sig='WAIT', conf=0, tags=[];
+
+  if(htf==='bull'){
+    if(ob && ob.type==='bullish'){ conf+=28; tags.push({l:'Bullish OB',cls:'on-ob'}); }
+    if(fvg && fvg.type==='bullish'){ conf+=18; tags.push({l:'Bull FVG',cls:'on-buy'}); }
+    if(bos==='bullish'){ conf+=15; tags.push({l:'BOS ▲',cls:'on-buy'}); }
+    if(liq==='sellside'){ conf+=20; tags.push({l:'Liq Sweep',cls:'on-warn'}); }
+    if(inDiscount){ conf+=14; tags.push({l:'Discount Zone',cls:'on-buy'}); }
+    if(choch){ conf+=5; tags.push({l:'CHoCH',cls:'on-warn'}); }
+    if(conf>=50) sig='BUY';
+  } else if(htf==='bear'){
+    if(ob && ob.type==='bearish'){ conf+=28; tags.push({l:'Bearish OB',cls:'on-ob'}); }
+    if(fvg && fvg.type==='bearish'){ conf+=18; tags.push({l:'Bear FVG',cls:'on-sell'}); }
+    if(choch){ conf+=20; tags.push({l:'CHoCH ▼',cls:'on-sell'}); }
+    if(liq==='buyside'){ conf+=15; tags.push({l:'Liq Sweep',cls:'on-warn'}); }
+    if(bos==='bearish'){ conf+=10; tags.push({l:'BOS ▼',cls:'on-sell'}); }
+    if(inPremium){ conf+=9; tags.push({l:'Premium Zone',cls:'on-sell'}); }
+    if(conf>=50) sig='SELL';
+  } else {
+    tags.push({l:'No Bias',cls:''});
+  }
+
+  if(conf < 50) sig='WAIT';
+  conf = Math.min(conf, 94);
+
+  const entry = sig==='BUY'  ? price - atr*0.15
+              : sig==='SELL' ? price + atr*0.15
+              : price;
+  const sl    = sig==='BUY'  ? entry - atr*0.4
+              : sig==='SELL' ? entry + atr*0.4
+              : price - atr*0.4;
+  const tp1   = sig==='BUY'  ? entry + atr*1.5
+              : sig==='SELL' ? entry - atr*1.5
+              : price + atr*1.5;
+  const tp2   = sig==='BUY'  ? entry + atr*3
+              : sig==='SELL' ? entry - atr*3
+              : price + atr*3;
+  const rrr   = Math.abs(tp1-entry)/Math.abs(entry-sl);
+
+  const checks=[
+    {l:'HTF bias aligned',  pass:htf!=='neu',        v:htf==='bull'?'BULL':htf==='bear'?'BEAR':'FLAT'},
+    {l:'Order block found', pass:!!ob,                v:ob?ob.type.slice(0,4).toUpperCase():' NO'},
+    {l:'Fair value gap',    pass:!!fvg,               v:fvg?fvg.type.slice(0,4).toUpperCase():' NO'},
+    {l:'BOS / CHoCH',       pass:!!bos||!!choch,      v:bos?'BOS':choch?'CHoCH':'NONE'},
+    {l:'Liquidity sweep',   pass:!!liq,               v:liq?liq.slice(0,4).toUpperCase():' NO'},
+    {l:'Correct price zone',pass:(sig==='BUY'&&inDiscount)||(sig==='SELL'&&inPremium)||(sig==='WAIT'),
+                                                      v:inDiscount?'DISC':inPremium?'PREM':'EQ'},
+    {l:'RRR ≥ 1:2',         pass:rrr>=1.8,            v:'1:'+rrr.toFixed(1)},
+  ];
+
+  return {sig, conf, htf, atr, price, entry, sl, tp1, tp2, rrr, tags, checks, ob, fvg, bos, choch, liq};
+}
+
+// ══════════════════════════════════════════════
+//  SCAN
+// ══════════════════════════════════════════════
+async function doScan(){
+  const btn = document.getElementById('scan-btn');
+  btn.innerHTML='<span class="spin"></span> SCANNING...';
+  btn.classList.add('scanning');
+  btn.disabled=true;
+
+  try{
+    const count = currentTF >= 3600 ? 50 : 80;
+    const raw   = await fetchCandles(currentSym, currentTF, count);
+    candles     = raw;
+
+    if(!raw.length){ toast('No candle data returned'); return; }
+
+    drawChart(raw.slice(-20));
+
+    const price = lastPrice || parseFloat(raw[raw.length-1].close);
+    const result= runSMC(raw, price);
+
+    renderBias(result);
+    renderMetrics(result);
+    renderConfBar(result);
+    renderSignal(result);
+    renderChecklist(result);
+    addHistory(result);
+
+    document.getElementById('last-scan').textContent = 'last scan: '+new Date().toLocaleTimeString();
+    if(result.sig !== 'WAIT') toast(result.sig==='BUY' ? '📈 BUY signal on '+SYM_NAMES[currentSym] : '📉 SELL signal on '+SYM_NAMES[currentSym]);
+  } catch(e){
+    toast('Scan error: '+e.message);
+  } finally {
+    btn.innerHTML='<i class="ti ti-radar"></i> SCAN MARKET';
+    btn.classList.remove('scanning');
+    btn.disabled=false;
+  }
+}
+
+// ══════════════════════════════════════════════
+//  RENDER HELPERS
+// ══════════════════════════════════════════════
+function renderBias(d){
+  const picks = ['bull','bear','neu'];
+  const ltf   = d.htf === 'bull' ? (Math.random()>0.3?'bull':'neu') : d.htf==='bear' ? (Math.random()>0.3?'bear':'neu') : 'neu';
+  const h1    = d.htf;
+  const h4    = d.htf;
+  const map   = {bull:'BULLISH',bear:'BEARISH',neu:'NEUTRAL'};
+  document.getElementById('bias-row').innerHTML=[
+    {l:'H4',v:h4},{l:'H1',v:h1},{l:'LTF',v:ltf}
+  ].map(b=>`<span class="bias-chip ${b.v}">${b.l}: ${map[b.v]}</span>`).join('');
+}
+
+function renderMetrics(d){
+  const mc = d.sig==='BUY'?'green':d.sig==='SELL'?'pink':'yellow';
+  const cc = d.conf>70?'green':d.conf>50?'yellow':'pink';
+  document.getElementById('metrics').innerHTML=`
+    <div class="mc"><div class="mc-label">SIGNAL</div><div class="mc-val ${mc}">${d.sig}</div></div>
+    <div class="mc"><div class="mc-label">CONFIDENCE</div><div class="mc-val ${cc}">${d.sig==='WAIT'?'—':d.conf+'%'}</div></div>
+    <div class="mc"><div class="mc-label">PRICE</div><div class="mc-val blue" style="font-size:14px">${d.price.toFixed(2)}</div></div>
+    <div class="mc"><div class="mc-label">ATR</div><div class="mc-val white" style="font-size:16px">${d.atr.toFixed(2)}</div></div>
+  `;
+}
+
+function renderConfBar(d){
+  const col = d.sig==='BUY'?'var(--ng)':d.sig==='SELL'?'var(--npk)':'var(--ny)';
+  document.getElementById('conf-wrap').innerHTML=`
+    <div class="conf-top"><span>CONFIDENCE</span><span style="color:${col}">${d.conf}%</span></div>
+    <div class="conf-bg"><div class="conf-fill" style="width:${d.conf}%;background:${col}"></div></div>
+  `;
+}
+
+function renderSignal(d){
+  const tagsHtml = d.tags.map(t=>`<span class="tag ${t.cls}">${t.l}</span>`).join('');
+  if(d.sig==='WAIT'){
+    document.getElementById('signal-area').innerHTML=`
+    <div class="sig-box wait">
+      <div class="sig-top"><span class="sig-name">${SYM_NAMES[currentSym]||currentSym}</span><span class="dir-badge wait">WAIT</span></div>
+      <div class="wait-msg"><i class="ti ti-clock"></i> No high-probability setup<span>Conditions not aligned — hold off entering</span></div>
+      ${tagsHtml?'<div class="smc-tags">'+tagsHtml+'</div>':''}
+    </div>`;
+    return;
+  }
+  const isB = d.sig==='BUY';
+  document.getElementById('signal-area').innerHTML=`
+  <div class="sig-box ${isB?'buy':'sell'}">
+    <div class="sig-top"><span class="sig-name">${SYM_NAMES[currentSym]||currentSym}</span><span class="dir-badge ${isB?'buy':'sell'}">${d.sig}</span></div>
+    <div class="price-grid">
+      <div class="pg-item"><div class="pg-label">ENTRY</div><div class="pg-val blue">${d.entry.toFixed(2)}</div></div>
+      <div class="pg-item"><div class="pg-label">STOP LOSS</div><div class="pg-val pink">${d.sl.toFixed(2)}</div></div>
+      <div class="pg-item"><div class="pg-label">TP1 (1.5R)</div><div class="pg-val green">${d.tp1.toFixed(2)}</div></div>
+      <div class="pg-item"><div class="pg-label">TP2 (3R)</div><div class="pg-val green">${d.tp2.toFixed(2)}</div></div>
+    </div>
+    <div class="smc-tags">${tagsHtml}</div>
+  </div>`;
+}
+
+function renderChecklist(d){
+  document.getElementById('checklist').innerHTML=`
+    <div class="cl-title"><i class="ti ti-checklist" style="font-size:12px"></i>  SMC CHECKLIST</div>
+    ${d.checks.map(c=>`
+    <div class="cl-row">
+      <i class="ti ${c.pass?'ti-circle-check':'ti-circle-x'} cl-icon ${c.pass?'pass':'fail'}"></i>
+      <span>${c.l}</span>
+      <span class="cl-val">${c.v}</span>
+    </div>`).join('')}
+  `;
+}
+
+function addHistory(d){
+  if(d.sig==='WAIT') return;
+  signalHistory.unshift({sig:d.sig, sym:SYM_NAMES[currentSym]||currentSym, time:new Date().toLocaleTimeString(), conf:d.conf});
+  if(signalHistory.length>6) signalHistory.pop();
+  const sec = document.getElementById('hist-section');
+  const list= document.getElementById('hist-list');
+  sec.style.display='block';
+  list.innerHTML=signalHistory.map(h=>`
+    <div class="hist-row">
+      <span class="hist-dir ${h.sig.toLowerCase()}">${h.sig}</span>
+      <span>${h.sym}</span>
+      <span class="hist-meta">${h.conf}% &nbsp; ${h.time}</span>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+//  MINI CANDLE CHART (canvas)
+// ══════════════════════════════════════════════
+function drawChart(cs){
+  const canvas = document.getElementById('mini-chart');
+  const dpr = window.devicePixelRatio||1;
+  const W = canvas.parentElement.clientWidth - 24;
+  const H = 90;
+  canvas.width  = W*dpr;
+  canvas.height = H*dpr;
+  canvas.style.width  = W+'px';
+  canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,W,H);
+
+  if(!cs.length) return;
+  const highs = cs.map(c=>c.high);
+  const lows  = cs.map(c=>c.low);
+  const maxH  = Math.max(...highs);
+  const minL  = Math.min(...lows);
+  const range = maxH-minL || 1;
+  const pad   = 6;
+  const barW  = (W - pad*2) / cs.length;
+  const bodyMin = 1.5;
+
+  const scaleY = v => H - pad - ((v-minL)/range)*(H-pad*2);
+
+  cs.forEach((c,i)=>{
+    const x     = pad + i*barW + barW*0.15;
+    const bw    = barW*0.7;
+    const bull  = c.close >= c.open;
+    const col   = bull ? '#00ff9d' : '#ff2d78';
+    const yHigh = scaleY(c.high);
+    const yLow  = scaleY(c.low);
+    const yOpen = scaleY(c.open);
+    const yClose= scaleY(c.close);
+
+    // wick
+    ctx.strokeStyle = col;
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.moveTo(x+bw/2, yHigh);
+    ctx.lineTo(x+bw/2, yLow);
+    ctx.stroke();
+
+    // body
+    ctx.fillStyle = col;
+    const bodyTop = Math.min(yOpen,yClose);
+    const bodyH   = Math.max(Math.abs(yClose-yOpen), bodyMin);
+    ctx.fillRect(x, bodyTop, bw, bodyH);
+  });
+}
+
+// ══════════════════════════════════════════════
+//  SYMBOL / TF CONTROLS
+// ══════════════════════════════════════════════
+function setSym(s, el){
+  currentSym = s;
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('act'));
+  el.classList.add('act');
+  lastPrice=null; prevPrice=null;
+  subscribeTick(s);
+  if(document.getElementById('auto-toggle').checked) doScan();
+}
+
+function setTF(t, el){
+  currentTF = t;
+  document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+}
+
+// ══════════════════════════════════════════════
+//  AUTO-REFRESH
+// ══════════════════════════════════════════════
+function toggleAuto(){
+  const on = document.getElementById('auto-toggle').checked;
+  if(on){ startAuto(); toast('Auto-scan ON (every '+autoInterval+'s)'); }
+  else  { stopAuto();  toast('Auto-scan OFF'); }
+}
+
+function startAuto(){
+  stopAuto();
+  autoTimer = setInterval(doScan, autoInterval*1000);
+}
+
+function stopAuto(){
+  if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
+}
+
+function updateAutoInterval(){
+  autoInterval = parseInt(document.getElementById('auto-int').value);
+  if(document.getElementById('auto-toggle').checked){ startAuto(); toast('Interval: '+autoInterval+'s'); }
+}
+
+// ══════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════
+function showLoader(txt){
+  document.getElementById('loader-text').textContent = txt||'LOADING...';
+  document.getElementById('loader').classList.add('show');
+}
+function hideLoader(){ document.getElementById('loader').classList.remove('show'); }
+function showErr(msg){ document.getElementById('login-err').textContent = msg; }
+function setWS(state, label){
+  const dot = document.getElementById('ws-dot');
+  const lbl = document.getElementById('ws-label');
+  dot.className='ws-dot '+state;
+  lbl.textContent = label;
+}
+function toast(msg){
+  const t = document.createElement('div');
+  t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 3200);
+}
+
+// clock
+setInterval(()=>{
+  const el = document.getElementById('clock');
+  if(el) el.textContent = new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+}, 1000);
+
+// ══════════════════════════════════════════════
+//  INIT — check OAuth callback or saved token
+// ══════════════════════════════════════════════
+(async function init(){
+  const params = new URLSearchParams(window.location.search);
+
+  // Deriv OAuth returns: ?token1=XXX&acct1=XXX (may also have token2, acct2 for multi-account)
+  // Pick the first demo account token if possible, otherwise first token
+  let oauthToken = null;
+  for(let i=1; i<=5; i++){
+    const t    = params.get('token'+i);
+    const acct = params.get('acct'+i) || '';
+    if(t){
+      // prefer virtual/demo account (account IDs starting with VRTC)
+      if(acct.startsWith('VRTC') || !oauthToken) oauthToken = t;
+    }
+  }
+
+  if(oauthToken){
+    // Clean the URL immediately so refresh doesn't re-trigger
+    window.history.replaceState({}, '', window.location.pathname);
+    await doLogin(oauthToken);
+    return;
+  }
+
+  // Check for a previously saved token
+  const saved = localStorage.getItem('deriv_token');
+  if(saved){
+    await doLogin(saved);
+  }
+})();
+
+function toggleShow(){
+  const inp = document.getElementById('token-input');
+  const ico = document.getElementById('eye-icon');
+  if(inp.type === 'password'){
+    inp.type = 'text';
+    ico.innerHTML = '<i class="ti ti-eye-off"></i>';
+  } else {
+    inp.type = 'password';
+    ico.innerHTML = '<i class="ti ti-eye"></i>';
+  }
+}
+
+function clearSession(){
+  localStorage.removeItem('deriv_token');
+  const err = document.getElementById('login-err');
+  err.textContent = 'Session cleared.';
+  err.style.color = 'var(--ng)';
+}
+
+</script>
+</body>
+</html>
